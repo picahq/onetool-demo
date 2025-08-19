@@ -2,14 +2,13 @@
 
 import { useRef, useEffect, useState } from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
-import { useAuthKit } from "@picahq/authkit";
 import { Header } from "./components/Header";
 import { ChatMessages } from "./components/ChatMessages";
 import { ChatInput } from "./components/ChatInput";
 
 export default function Home() {
   const [input, setInput] = useState('');
+  const [selectedModel, setSelectedModel] = useState('gpt-4.1');
 
   const {
     messages,
@@ -17,8 +16,9 @@ export default function Home() {
     stop,
     status,
   } = useChat({
-    transport: new DefaultChatTransport({ api: '/api/chat' }),
-  });
+    api: '/api/chat',
+    id: `chat-${selectedModel}`,
+  } as any);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -27,6 +27,12 @@ export default function Home() {
   }, []);
 
   const isLoading = status === 'streaming' || status === 'submitted';
+
+  useEffect(() => {
+    if (!isLoading) {
+      inputRef.current?.focus();
+    }
+  }, [isLoading]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -44,17 +50,10 @@ export default function Home() {
     sendMessage({ text: action });
   };
 
-  // Add new useEffect to focus after loading completes
-  useEffect(() => {
-    if (!isLoading) {
-      inputRef.current?.focus();
-    }
-  }, [isLoading]);
-
   return (
     <div className="flex flex-col justify-between h-dvh">
       <div className="flex flex-col h-full">
-        <Header />
+        <Header selectedModel={selectedModel} onModelChange={setSelectedModel} />
         <ChatMessages messages={messages} isLoading={isLoading} />
         <ChatInput
           inputRef={inputRef}

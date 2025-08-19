@@ -1,6 +1,6 @@
 # Pica OneTool Demo Chat App ✨
 
-![Pica OneTool in Action](demo.gif)
+![Pica OneTool in Action](chat-demo.gif)
 
 [Pica OneTool](https://www.npmjs.com/package/@picahq/ai) is a powerful integration layer that seamlessly connects AI with any API. With automatic handling of schema definitions, authentication flows, and execution processes, it eliminates the complexity of API integrations - allowing you to focus on building great experiences.
 
@@ -10,11 +10,12 @@ A demo chat app showcasing Pica OneTool's capabilities. Built with [@picahq/ai](
 
 ## Features
 
-- 🔌 **Universal Integration**: Connect with 130+ APIs and use 20,000+ actions powered by Pica
+- 🔌 **Universal Integration**: Connect with 150+ APIs and use 25,000+ actions powered by Pica
 - 🤖 **AI-Powered Assistant**: Natural language interface that understands your intent
 - 🧠 **Smart Execution**: Automatically handles prerequisite actions and complex workflows
 - 📊 **Knowledge Fetching**: Dynamically learns API capabilities and requirements
 - 🔍 **Action Observability**: View success responses and error messages
+- 🔄 **Model Switching**: Switch between multiple models (OpenAI, Google, Anthropic)
 
 ## Getting Started
 
@@ -33,12 +34,18 @@ npm install
 ```env
 PICA_SECRET_KEY=your_secret_key
 OPENAI_API_KEY=your_openai_api_key
+GOOGLE_GENERATIVE_AI_API_KEY=your_google_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
 ```
 
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `PICA_SECRET_KEY` | Your [Pica API secret key](https://app.picaos.com/settings/api-keys) | Yes |
-| `OPENAI_API_KEY` | Your OpenAI API key | Yes |
+| `OPENAI_API_KEY` | Your OpenAI API key | No |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Your Google API key | No |
+| `ANTHROPIC_API_KEY` | Your Anthropic API key | No |
+
+Configure **one or more** model API keys (`OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `ANTHROPIC_API_KEY`) to enable their respective models. You can switch between any configured models in the UI - while you don't need all three keys set up, having multiple enables more model options. Set as many or as few as you'd like to use.
 
 4. **Run the development server:**
 ```bash
