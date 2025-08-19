@@ -2,35 +2,22 @@
 
 import { useRef, useEffect, useState } from "react";
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { useAuthKit } from "@picahq/authkit";
 import { Header } from "./components/Header";
 import { ChatMessages } from "./components/ChatMessages";
 import { ChatInput } from "./components/ChatInput";
 
 export default function Home() {
-  const { open } = useAuthKit({
-    token: {
-      url: "http://localhost:3000/api/authkit",
-      headers: {},
-    },
-    // appTheme: 'dark',
-    selectedConnection: "GitHub",
-    onSuccess: (connection) => {},
-    onError: (error) => {},
-    onClose: () => {},
-  });
+  const [input, setInput] = useState('');
 
   const {
     messages,
-    handleSubmit,
-    input,
-    handleInputChange,
-    append,
-    isLoading,
+    sendMessage,
     stop,
     status,
   } = useChat({
-    maxSteps: 20,
+    transport: new DefaultChatTransport({ api: '/api/chat' }),
   });
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -38,6 +25,24 @@ export default function Home() {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  const isLoading = status === 'streaming' || status === 'submitted';
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage({ text: input.trim() });
+      setInput('');
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+  };
+
+  const handleSuggestedAction = (action: string) => {
+    sendMessage({ text: action });
+  };
 
   // Add new useEffect to focus after loading completes
   useEffect(() => {
@@ -60,7 +65,7 @@ export default function Home() {
           status={status}
           stop={stop}
           messages={messages}
-          append={append}
+          onSuggestedAction={handleSuggestedAction}
         />
       </div>
     </div>

@@ -1,20 +1,18 @@
 import { motion } from "framer-motion";
 import { FormEvent, RefObject } from "react";
 import { suggestedActions } from "../constants/suggestedActions";
-import { ChatRequestOptions } from "ai";
-import { CreateMessage } from "ai";
-import { Message } from "ai";
+import { UIMessage } from "ai";
 
 interface ChatInputProps {
   inputRef: RefObject<HTMLTextAreaElement | null>;
   input: string;
   handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
-  append: (message: Message | CreateMessage, chatRequestOptions?: ChatRequestOptions) => Promise<string | null | undefined>
+  onSuggestedAction: (action: string) => void;
   isLoading: boolean;
   status: string;
   stop: () => void;
-  messages: any[];
+  messages: UIMessage[];
 }
 
 export function ChatInput({
@@ -22,7 +20,7 @@ export function ChatInput({
   input,
   handleInputChange,
   handleSubmit,
-  append,
+  onSuggestedAction,
   isLoading,
   status,
   stop,
@@ -30,7 +28,6 @@ export function ChatInput({
 }: ChatInputProps) {
   const wrappedHandleSubmit = (e: FormEvent<HTMLFormElement>) => {
     handleSubmit(e);
-    // Single smooth scroll after submit
     requestAnimationFrame(() => {
       window.scrollTo({
         top: 0,
@@ -52,11 +49,8 @@ export function ChatInput({
               className={index > 1 ? "hidden sm:block" : "block"}
             >
               <button
-                onClick={async () => {
-                  append({
-                    role: "user",
-                    content: suggestedAction.action,
-                  });
+                onClick={() => {
+                  onSuggestedAction(suggestedAction.action);
                 }}
                 className="w-full text-left bg-gray-500/10 hover:bg-gray-500/20 text-white rounded-lg p-3 text-sm transition-all duration-300 flex flex-col gap-1"
               >

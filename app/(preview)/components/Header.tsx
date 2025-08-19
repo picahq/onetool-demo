@@ -1,6 +1,5 @@
 import Image from "next/image";
-import { GitHubIcon, HelpIcon, VercelIcon } from "@/components/icons";
-
+import { GitHubIcon, HelpIcon } from "@/components/icons";
 
 export function Header() {
   return (
@@ -16,17 +15,16 @@ export function Header() {
                 height={30}
               />
             </a>
-
           </div>
 
           <div className="flex items-center gap-2">
             <a
-              href="https://github.com/picahq/pica"
+              href="https://github.com/picahq/ai"
               target="_blank"
               className="flex items-center gap-2 text-gray-400 hover:text-green-500 transition-colors text-xs"
             >
               <GitHubIcon size={16} />
-              <span>picahq/pica</span>
+              <span>picahq/ai</span>
             </a>
             <div className="h-4 w-px bg-green-800/20" />
             <a
@@ -40,7 +38,6 @@ export function Header() {
           </div>
         </div>
       </div>
-
     </header>
   );
 }

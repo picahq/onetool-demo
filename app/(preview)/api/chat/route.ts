@@ -1,9 +1,9 @@
 import { openai } from "@ai-sdk/openai";
-import { convertToCoreMessages, streamText, Message } from "ai";
+import { convertToModelMessages, streamText, stepCountIs } from "ai";
 import { Pica } from "@picahq/ai";
-
+import type { UIMessage } from "ai";
 export async function POST(request: Request) {
-  const { messages }: { messages: Message[] } = await request.json();
+  const { messages }: { messages: UIMessage[] } = await request.json();
 
   const pica = new Pica(process.env.PICA_SECRET_KEY as string, {
     connectors: ["*"] // Pass connector keys to allow access to
@@ -11,15 +11,15 @@ export async function POST(request: Request) {
 
   const system = await pica.generateSystemPrompt();
 
-  const stream = streamText({
+  const result = streamText({
     model: openai("gpt-4.1"),
     system,
     tools: {
       ...pica.oneTool,
     },
-    messages: convertToCoreMessages(messages),
-    maxSteps: 40,
+    messages: convertToModelMessages(messages),
+    stopWhen: stepCountIs(25)
   });
 
-  return stream.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }
