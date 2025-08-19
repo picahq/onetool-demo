@@ -17,7 +17,7 @@
     "@nextui-org/react": "^2.6.11",
     "@picahq/ai": "^3.0.1",
     "@picahq/authkit": "^1.0.2",
-    "@picahq/authkit-node": "^1.0.3",
+    "@picahq/authkit-node": "^2.0.0",
     "@radix-ui/react-scroll-area": "^1.2.3",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.1.2",
