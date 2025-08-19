@@ -1,24 +1,20 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { BotIcon, UserIcon } from "./icons";
+import { BotIcon } from "./icons";
 import { ReactNode } from "react";
-import { StreamableValue, useStreamableValue } from "ai/rsc";
+import { StreamableValue, useStreamableValue } from "@ai-sdk/rsc";
 import { Markdown } from "./markdown";
-import { ToolInvocation } from "ai";
-import { toast } from "sonner";
-import Image from "next/image";
-import { useState } from "react";
 import KnowledgeCard from "./ui/knowledge-card";
-import { Badge } from "./ui/badge";
 import ExecuteCard, { ExecuteResult } from "./ui/execute-card";
 
-const toTitleCase = (str: string) => {
-  return str
-    .split(/[-_\s]/)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
-};
+interface ToolInvocation {
+  toolCallId: string;
+  toolName: string;
+  state: 'partial-call' | 'call' | 'result';
+  args?: any;
+  result?: any;
+}
 
 export const TextStreamMessage = ({
   content,
@@ -55,18 +51,15 @@ interface ActionResult {
   title?: string;
 }
 
-// Update the type guard to handle both successful and failed cases
 const isExecuteResult = (result: ActionResult): result is ExecuteResult => {
   if (!result.success) {
-    // For failed executions, we only need success flag and error details
-    return typeof result.success === 'boolean' && 
-           (typeof result.message === 'string' || typeof result.title === 'string');
+    return typeof result.success === 'boolean' &&
+      (typeof result.message === 'string' || typeof result.title === 'string');
   }
-  
-  // For successful executions, we need action and platform
-  return typeof result.action === 'string' && 
-         typeof result.platform === 'string' && 
-         typeof result.success === 'boolean';
+
+  return typeof result.action === 'string' &&
+    typeof result.platform === 'string' &&
+    typeof result.success === 'boolean';
 };
 
 export const Message = ({
@@ -80,18 +73,18 @@ export const Message = ({
 }) => {
   const isUser = role === "user";
 
-
   // Collect all actions and knowledge from tool invocations
-  const allActions = toolInvocations?.reduce((acc, toolInvocation) => {
+  const allActions = toolInvocations?.reduce((acc: {
+    platforms: Record<string, { name: string; actions: any[] }>;
+    knowledge: Array<{ platform: string; action: any }>;
+    executeResults: ActionResult[];
+  }, toolInvocation) => {
     const { toolName, state } = toolInvocation;
     const result = (toolInvocation as any).result as ActionResult;
 
     if (state === "result") {
       // For execute actions, collect them all (successful and failed)
       if (toolName === "execute") {
-        if (!acc.executeResults) {
-          acc.executeResults = [];
-        }
         acc.executeResults.push(result);
       }
       // For getAvailableActions, collect actions by platform
@@ -112,9 +105,6 @@ export const Message = ({
       }
       // For getActionKnowledge, store the action knowledge
       else if (toolName === "getActionKnowledge" && result.action) {
-        if (!acc.knowledge) {
-          acc.knowledge = [];
-        }
         acc.knowledge.push({
           platform: result.platform || '',
           action: result.action
@@ -122,7 +112,7 @@ export const Message = ({
       }
     }
     return acc;
-  }, { 
+  }, {
     platforms: {} as Record<string, { name: string; actions: any[] }>,
     knowledge: [] as Array<{ platform: string; action: any }>,
     executeResults: [] as ActionResult[]
@@ -130,24 +120,21 @@ export const Message = ({
 
   // Calculate total actions across all platforms
   const totalActions = Object.values(allActions?.platforms || {})
-    .reduce((sum, platform) => sum + platform.actions.length, 0);
+    .reduce((sum, platform: { name: string; actions: any[] }) => sum + platform.actions.length, 0);
 
   // Filter execute results to ensure they match ExecuteResult type
   const executeResults = allActions?.executeResults?.filter(isExecuteResult) || [];
 
-
   return (
     <motion.div
-      className={`flex w-full max-w-3xl md:w-[800px] mx-auto py-4 first:pt-8 ${
-        isUser ? "justify-end" : ""
-      }`}
+      className={`flex w-full max-w-3xl md:w-[800px] mx-auto py-4 first:pt-8 ${isUser ? "justify-end" : ""
+        }`}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
       <div
-        className={`min-w-0 space-y-4 text-xs text-foreground/70 ${
-          isUser ? "bg-gray-500/20 rounded-3xl p-4 max-w-[80%]" : ""
-        }`}
+        className={`min-w-0 text-xs text-foreground/70 ${isUser ? "bg-gray-500/20 rounded-3xl px-4 py-2 max-w-[80%] space-y-1" : "space-y-4"
+          }`}
       >
         {content && <Markdown content={content as string} fontSize="sm" />}
 
@@ -156,9 +143,9 @@ export const Message = ({
             {/* Show KnowledgeCard if we have any platforms or knowledge */}
             {(Object.keys(allActions.platforms).length > 0 || allActions.knowledge.length > 0) && (
               <KnowledgeCard
-                actions={Object.values(allActions.platforms).flatMap(p => p.actions)}
+                actions={Object.values(allActions.platforms).flatMap((p: { name: string; actions: any[] }) => p.actions)}
                 knowledge={allActions.knowledge}
-                platform={Object.values(allActions.platforms)[0]?.name || ''}
+                platform={(Object.values(allActions.platforms)[0] as { name: string; actions: any[] })?.name || ''}
                 totalActions={totalActions}
               />
             )}
@@ -167,29 +154,6 @@ export const Message = ({
             {executeResults.length > 0 && (
               <ExecuteCard results={executeResults} />
             )}
-
-            {/* Keep GitHub connection UI */}
-            {toolInvocations.map((toolInvocation) => {
-              const { toolName, toolCallId, state } = toolInvocation;
-
-              if (state === "result" && toolName === "connectGithub") {
-                return (
-                  <div key={toolCallId} className="text-sm">
-                    <div className="p-3 rounded-md border border-blue-500/20 bg-blue-500/10">
-                      <div className="flex items-center gap-3">
-                        <Image
-                          src={`https://assets.buildable.dev/catalog/node-templates/github.svg`}
-                          alt="GitHub logo"
-                          width={32}
-                          height={32}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            })}
           </div>
         )}
       </div>

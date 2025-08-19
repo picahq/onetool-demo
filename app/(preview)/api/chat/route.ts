@@ -1,25 +1,43 @@
 import { openai } from "@ai-sdk/openai";
-import { convertToCoreMessages, streamText, Message } from "ai";
+import { google } from "@ai-sdk/google";
+import { anthropic } from "@ai-sdk/anthropic";
+import { convertToModelMessages, streamText, stepCountIs } from "ai";
 import { Pica } from "@picahq/ai";
+import type { UIMessage } from "ai";
+
+function getModel(modelId: string) {
+  switch (modelId) {
+    case "gpt-4.1":
+    case "gpt-5":
+      return openai(modelId);
+    case "gemini-2.5-pro":
+      return google(modelId);
+    case "claude-sonnet-4-20250514":
+      return anthropic(modelId);
+    default:
+      return openai("gpt-4.1");
+  }
+}
 
 export async function POST(request: Request) {
-  const { messages }: { messages: Message[] } = await request.json();
+  const { messages, id }: { messages: UIMessage[], id: string } = await request.json();
+  const modelId = id.replace('chat-', '');
 
   const pica = new Pica(process.env.PICA_SECRET_KEY as string, {
-    connectors: ["*"] // Pass connector keys to allow access to
+    connectors: ["*"]
   });
 
   const system = await pica.generateSystemPrompt();
 
-  const stream = streamText({
-    model: openai("gpt-4.1"),
+  const result = streamText({
+    model: getModel(modelId),
     system,
     tools: {
       ...pica.oneTool,
     },
-    messages: convertToCoreMessages(messages),
-    maxSteps: 40,
+    messages: convertToModelMessages(messages),
+    stopWhen: stepCountIs(25)
   });
 
-  return stream.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }

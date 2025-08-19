@@ -1,11 +1,11 @@
 import { Message } from "@/components/message";
 import { motion } from "framer-motion";
 import { ColorfulLoadingAnimation } from "@/components/loading-spinner";
-import { Message as MessageType } from "ai";
+import { UIMessage } from "ai";
 import { useEffect, useRef } from "react";
 
 interface ChatMessagesProps {
-  messages: MessageType[];
+  messages: UIMessage[];
   isLoading: boolean;
 }
 
@@ -63,7 +63,7 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
                 >
                   Pica&apos;s Vercel AI SDK tools
                 </a>
-                , this interface shows how you can connect your AI agents to 130+ APIs and 20,000+ tools with a single line
+                , this interface shows how you can connect your AI agents to 150+ APIs and 25,000+ tools with a single line
                 of code.
               </p>
             </div>
@@ -72,13 +72,30 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
       )}
 
       {messages.map((message) => {
+        const textContent = message.parts
+          ?.filter(part => part.type === 'text')
+          ?.map(part => part.text)
+          ?.join('') || '';
+
+        const toolInvocations = message.parts
+          ?.filter(part => part.type.startsWith('tool-') && (part as any).state === 'output-available')
+          ?.map(part => {
+            return {
+              toolCallId: (part as any).toolCallId || `tool-${Math.random()}`,
+              toolName: part.type.replace('tool-', ''), // Remove 'tool-' prefix
+              state: 'result' as 'partial-call' | 'call' | 'result', // Map to 'result' for consistency
+              result: (part as any).output, // Use 'output' field
+              args: (part as any).input,
+            };
+          }) || [];
+
         if (message.role === "user") {
           return (
             <Message
               key={message.id}
               role={message.role}
-              content={message.content}
-              toolInvocations={message.toolInvocations}
+              content={textContent}
+              toolInvocations={toolInvocations}
             />
           );
         }
@@ -86,15 +103,14 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
         // For assistant messages, render if there's content or tool invocations
         if (
           message.role === "assistant" &&
-          (message.content ||
-            (message.toolInvocations && message.toolInvocations.length > 0))
+          (textContent || toolInvocations.length > 0)
         ) {
           return (
             <Message
               key={message.id}
               role={message.role}
-              content={message.content}
-              toolInvocations={message.toolInvocations}
+              content={textContent}
+              toolInvocations={toolInvocations}
             />
           );
         }

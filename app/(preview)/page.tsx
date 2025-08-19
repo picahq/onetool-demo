@@ -2,36 +2,23 @@
 
 import { useRef, useEffect, useState } from "react";
 import { useChat } from "@ai-sdk/react";
-import { useAuthKit } from "@picahq/authkit";
 import { Header } from "./components/Header";
 import { ChatMessages } from "./components/ChatMessages";
 import { ChatInput } from "./components/ChatInput";
 
 export default function Home() {
-  const { open } = useAuthKit({
-    token: {
-      url: "http://localhost:3000/api/authkit",
-      headers: {},
-    },
-    // appTheme: 'dark',
-    selectedConnection: "GitHub",
-    onSuccess: (connection) => {},
-    onError: (error) => {},
-    onClose: () => {},
-  });
+  const [input, setInput] = useState('');
+  const [selectedModel, setSelectedModel] = useState('gpt-4.1');
 
   const {
     messages,
-    handleSubmit,
-    input,
-    handleInputChange,
-    append,
-    isLoading,
+    sendMessage,
     stop,
     status,
   } = useChat({
-    maxSteps: 20,
-  });
+    api: '/api/chat',
+    id: `chat-${selectedModel}`,
+  } as any);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -39,17 +26,34 @@ export default function Home() {
     inputRef.current?.focus();
   }, []);
 
-  // Add new useEffect to focus after loading completes
+  const isLoading = status === 'streaming' || status === 'submitted';
+
   useEffect(() => {
     if (!isLoading) {
       inputRef.current?.focus();
     }
   }, [isLoading]);
 
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage({ text: input.trim() });
+      setInput('');
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+  };
+
+  const handleSuggestedAction = (action: string) => {
+    sendMessage({ text: action });
+  };
+
   return (
     <div className="flex flex-col justify-between h-dvh">
       <div className="flex flex-col h-full">
-        <Header />
+        <Header selectedModel={selectedModel} onModelChange={setSelectedModel} />
         <ChatMessages messages={messages} isLoading={isLoading} />
         <ChatInput
           inputRef={inputRef}
@@ -60,7 +64,7 @@ export default function Home() {
           status={status}
           stop={stop}
           messages={messages}
-          append={append}
+          onSuggestedAction={handleSuggestedAction}
         />
       </div>
     </div>
